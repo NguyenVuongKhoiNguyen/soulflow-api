@@ -1,0 +1,153 @@
+services:
+
+  redis:
+    image: redis:latest
+    container_name: redis-cache
+    command:
+      - redis-server
+      - --maxmemory
+      - "${REDIS_MAXMEMORY:-256mb}"
+      - --maxmemory-policy
+      - allkeys-lru
+      - --appendonly
+      - "yes"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: minio-image-storage
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-ai
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: ollama-model-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    entrypoint: ["/bin/ollama"]
+    command: ["pull", "${OLLAMA_CHAT_MODEL:-qwen2.5:0.5b}"]
+    restart: "no"
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Nguyen@12345"
+    ports:
+      - "1435:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./init:/init
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/mssql-tools18/bin/sqlcmd",
+          "-S",
+          "localhost",
+          "-U",
+          "sa",
+          "-P",
+          "Nguyen@12345",
+          "-C",
+          "-Q",
+          "SELECT 1"
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: "Nguyen@12345"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - >-
+        /opt/mssql-tools18/bin/sqlcmd
+        -S sqlserver -U sa -P "$${MSSQL_SA_PASSWORD}" -C
+        -Q "IF DB_ID(N'flower_shop') IS NULL CREATE DATABASE [flower_shop];"
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flower-shop-api
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=flower_shop;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=true"
+      SPRING_DATASOURCE_USERNAME: "sa"
+      SPRING_DATASOURCE_PASSWORD: "Nguyen@12345"
+      SPRING_DATA_REDIS_HOST: "redis"
+      MINIO_URL: "http://minio:9000"
+      ACCOUNT_SEEDING_ENABLED: "${ACCOUNT_SEEDING_ENABLED:-true}"
+      ACCOUNT_SEEDING_DEFAULT_PASSWORD: "${ACCOUNT_SEEDING_DEFAULT_PASSWORD:-password}"
+      CATALOG_SEEDING_ENABLED: "${CATALOG_SEEDING_ENABLED:-true}"
+      COMMENT_REPLY_SEEDING_ENABLED: "${COMMENT_REPLY_SEEDING_ENABLED:-true}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_CHAT_MODEL: "${OLLAMA_CHAT_MODEL:-qwen2.5:0.5b}"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  minio_data:
+  ollama_data:
+  sqlserver_data:
