@@ -1,4 +1,4 @@
-package com.poly.config;
+package com.poly.seeding;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -75,7 +75,6 @@ public class AccountDataSeeder implements ApplicationRunner {
                 account.setFullname("User " + suffix);
                 account.setEmail(username + "@example.com");
                 account.setPhone("0900000" + suffix);
-                account.setAddress("Seed address " + number);
                 account.setCreatedDate(LocalDateTime.now().plusSeconds(number));
                 account.setCredentialExpiredDate(LocalDateTime.now().plusYears(10));
                 account.setCredentialExpired(false);
@@ -84,6 +83,8 @@ public class AccountDataSeeder implements ApplicationRunner {
                 account.setRoles(new ArrayList<>());
                 createdAccounts++;
             }
+
+            account.setAddress(VietnameseAddressSeedData.forSeedNumber(number));
 
             boolean hasUserRole = account.getRoles().stream()
                 .anyMatch(role -> role.getCode() == RoleCode.USER);
@@ -95,9 +96,20 @@ public class AccountDataSeeder implements ApplicationRunner {
         }
 
         accountRepository.saveAll(accountsToSave);
+        updateInitialAccountAddress("admin", 101, "0900000001");
+        updateInitialAccountAddress("georgefloyd", 102, "0900000002");
         log.info(
             "Account seed complete: {} accounts created, {} USER role assignments added",
             createdAccounts, addedRoleAssignments
         );
+    }
+
+    private void updateInitialAccountAddress(String username, int addressNumber, String defaultPhone) {
+        accountRepository.findByUsername(username).ifPresent(account -> {
+            account.setAddress(VietnameseAddressSeedData.forSeedNumber(addressNumber));
+            if (account.getPhone() == null || account.getPhone().isBlank()) {
+                account.setPhone(defaultPhone);
+            }
+        });
     }
 }

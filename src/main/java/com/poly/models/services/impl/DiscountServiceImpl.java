@@ -53,7 +53,10 @@ public class DiscountServiceImpl implements DiscountService {
     @Override
     @Transactional
     @CachePut(value = "discountList", key = "#result.id")
-    @CacheEvict(value = "discountPages", allEntries = true)
+	@Caching(evict = {
+		@CacheEvict(value = "discountPages", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
+	})
     public DiscountResponse save(DiscountRequest request) {
         Discount discount = discountMapper.toEntity(request);
         discount.setExpired(discount.getExpiredDate() != null
@@ -66,7 +69,8 @@ public class DiscountServiceImpl implements DiscountService {
     @Transactional
     @Caching(evict = {
         @CacheEvict(value = "discountList", key = "#discountId"),
-        @CacheEvict(value = "discountPages", allEntries = true)
+        @CacheEvict(value = "discountPages", allEntries = true),
+        @CacheEvict(value = "productDetailList", allEntries = true)
     })
     public void softDeleteById(Long discountId) {
         discountRepo.softDelete(discountId);
@@ -119,10 +123,14 @@ public class DiscountServiceImpl implements DiscountService {
 
     @Override
     public void checkAndExpireBeforePagination(String keyword, LocalDateTime fromDate, LocalDateTime toDate, Boolean expired, Boolean deleted) {
-        int effectedRows = discountRepo.checkAndExpireBeforePagination(keyword, fromDate, fromDate, expired, deleted);
+        int effectedRows = discountRepo.checkAndExpireBeforePagination(keyword, fromDate, toDate, expired, deleted);
         if (effectedRows != 0) {
             Cache cache = cacheManager.getCache("discountPages");
-            cache.clear();
+            if (cache != null) cache.clear();
+            Cache detailCache = cacheManager.getCache("discountList");
+            if (detailCache != null) detailCache.clear();
+            Cache productDetailCache = cacheManager.getCache("productDetailList");
+            if (productDetailCache != null) productDetailCache.clear();
         }
     }
 
@@ -131,6 +139,7 @@ public class DiscountServiceImpl implements DiscountService {
     @Caching(
         evict = {
             @CacheEvict(value = "productList", key = "#productId"),
+            @CacheEvict(value = "productDetailList", key = "#productId"),
             @CacheEvict(value = "productPages", allEntries = true),
             @CacheEvict(value = "discountList", allEntries = true),
             @CacheEvict(value = "discountPages", allEntries = true)
@@ -160,6 +169,7 @@ public class DiscountServiceImpl implements DiscountService {
     @Override
     @Caching(evict = {
         @CacheEvict(value = "productList", allEntries = true),
+        @CacheEvict(value = "productDetailList", allEntries = true),
         @CacheEvict(value = "productPages", allEntries = true),
         @CacheEvict(value = "discountList", allEntries = true),
         @CacheEvict(value = "discountPages", allEntries = true)

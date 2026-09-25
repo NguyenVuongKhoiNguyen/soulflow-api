@@ -12,6 +12,7 @@ public interface CartService {
 	void softDeleteById(Long cartId);
 	CartResponse findById(Long cartId);
 	PageResponse<CartResponse> filterAndPaginateCarts(
+            Long accountId,
 			String keyword,
             LocalDateTime fromDate,
             LocalDateTime toDate,

@@ -13,7 +13,8 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
 	@Modifying
     @Query(value = """
         UPDATE p
-        SET p.quantity = p.quantity + od.quantity
+        SET p.quantity = p.quantity + od.quantity,
+            p.available = 1
         FROM products p
         JOIN orders_details od ON od.product_id = p.id
         JOIN orders o ON o.id = od.order_id

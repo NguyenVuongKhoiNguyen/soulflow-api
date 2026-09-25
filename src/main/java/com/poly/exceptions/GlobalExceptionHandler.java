@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -27,6 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(
+            ResponseStatusException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.valueOf(ex.getStatusCode().value()), ex.getReason(), request);
+    }
 
     private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, HttpServletRequest request) {
         ErrorResponse body = new ErrorResponse(
@@ -56,7 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(
             AuthenticationException ex, HttpServletRequest request) {
-        return buildError(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
+        return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)

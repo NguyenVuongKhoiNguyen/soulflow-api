@@ -9,21 +9,23 @@ public class CommentResponse {
     
     private String id;
     
-    private String username;
-    
-    private String fullname;
-    
-    private String photo;
-
-    private String url;
-    
     private String content;
     
     private String createdDate;
+
+    private String accountId;
+
+    private String accountUsername;
+    
+    private String accountFullname;
+    
+    private String accountPhoto;
+
+    private String accountUrl;
     
     private String productId;
-    
-    private String accountId;
-    
+
+    private String productName;
+
     private List<ReplyResponse> replyResponses;
 }

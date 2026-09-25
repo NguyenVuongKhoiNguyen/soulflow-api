@@ -9,6 +9,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.poly.models.entities.OrderDetail;
 import com.poly.models.entities.Product;
@@ -62,7 +64,7 @@ public abstract class OrderDetailMapper {
 		Integer effectedRows = productRepo.decreaseQuantity(productId, request.getQuantity());
 
 		if (effectedRows == 0) {
-			throw new RuntimeException("Quantity is not enough in stock");
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "This product is out of stock or the requested quantity is unavailable");
 		}
 
 		BigDecimal price = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;

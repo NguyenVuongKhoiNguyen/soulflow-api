@@ -114,6 +114,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 		SET p.quantity = p.quantity - :amount,
 		    p.available = CASE WHEN (p.quantity - :amount) = 0 THEN false ELSE p.available END
 		WHERE p.id = :id
+		AND p.available = true
 		AND p.quantity >= :amount
 	""")
 	int decreaseQuantity(@Param("id") Long id, @Param("amount") Integer amount); 

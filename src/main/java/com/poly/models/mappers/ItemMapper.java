@@ -15,6 +15,7 @@ import com.poly.models.entities.Product;
 import com.poly.models.repositories.ProductRepository;
 import com.poly.models.requests.ItemRequest;
 import com.poly.models.responses.ItemResponse;
+import com.poly.models.services.ImageService;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -24,6 +25,9 @@ public abstract class ItemMapper {
     
     @Autowired
     ProductRepository productRepo;
+
+    @Autowired
+    ImageService imageService;
 
     @Mapping(target = "subtotal",       ignore = true)
     @Mapping(target = "id",             source = "id")
@@ -37,6 +41,7 @@ public abstract class ItemMapper {
 	@Mapping(target = "subtotal", 	    source = "subtotal", numberFormat = "#.##")
     @Mapping(target = "cartId",         source = "cart.id")
     @Mapping(target = "productId",      source = "product.id")
+	@Mapping(target = "imageUrl",       ignore = true)
     public abstract ItemResponse toResponse(Item item);
 
     public abstract List<Item> toEntityList(List<ItemRequest> itemRequests);
@@ -51,5 +56,15 @@ public abstract class ItemMapper {
                 .orElseThrow(() -> new EntityNotFoundException("Can't find product with id: " + productId));
         item.setProduct(product);
         item.setSubtotal(product.getPrice().multiply(new BigDecimal(request.getQuantity())));
+    }
+
+    @AfterMapping
+    protected void addImageUrl(Item item, @MappingTarget ItemResponse response) {
+        if (item.getProduct() == null || item.getProduct().getProductImages().isEmpty()) return;
+        try {
+            response.setImageUrl(imageService.getPublicUrl(item.getProduct().getProductImages().get(0).getName()));
+        } catch (Exception exception) {
+            response.setImageUrl(null);
+        }
     }
 }

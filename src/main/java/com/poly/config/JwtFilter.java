@@ -13,6 +13,7 @@ import com.poly.utils.JwtUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,11 @@ import lombok.RequiredArgsConstructor;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -45,9 +51,21 @@ public class JwtFilter extends OncePerRequestFilter {
     	
         //validate token
         final String authorization= request.getHeader("Authorization");
+        String token = null;
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7);
+            token = authorization.substring(7);
+        }
 
+        if (token == null && request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("account_token".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (token != null) {
             if (jwtUtil.isValid(token)) {
 
                 String username = jwtUtil.extractUsername(token);

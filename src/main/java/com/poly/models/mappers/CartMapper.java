@@ -57,6 +57,7 @@ public abstract class CartMapper {
 			cart.setExpired(oldCart.getExpired());
 			cart.setDeleted(oldCart.getDeleted());
 			cart.setAccount(oldCart.getAccount());
+			attachItems(cart);
 			cart.calTotal();
 			return;
 		}
@@ -66,10 +67,14 @@ public abstract class CartMapper {
 		Account account = new Account();
 		account.setId(request.getAccountId());
 		cart.setAccount(account);
-		for (Item it : cart.getItems()) {
-			it.setCart(cart);
-		}
+		attachItems(cart);
 		cart.calTotal();
 		cart.setDeleted(false);
+	}
+
+	private void attachItems(Cart cart) {
+		for (Item item : cart.getItems()) {
+			item.setCart(cart);
+		}
 	}
 }

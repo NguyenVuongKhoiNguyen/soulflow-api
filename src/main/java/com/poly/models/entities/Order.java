@@ -49,6 +49,9 @@ public class Order {
     
 	@Setter(AccessLevel.NONE)
 	private BigDecimal total;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 	
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
     @Column(name = "created_date")
@@ -70,6 +73,10 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "account_id")
     private Account account;
+
+    @ManyToOne
+    @JoinColumn(name = "store_id")
+    private Store store;
     
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderDetail> orderDetails;
@@ -80,7 +87,7 @@ public class Order {
 	public void calTotal() {
 		BigDecimal temp = BigDecimal.ZERO;
 		if (orderDetails == null) {
-			total = temp;
+			total = temp.add(shippingFee == null ? BigDecimal.ZERO : shippingFee);
 			return;
 		}
 		for (OrderDetail od : orderDetails) {
@@ -89,7 +96,7 @@ public class Order {
 			}
 			temp = temp.add(od.getSubtotal());
 		}
-		total = temp;
+		total = temp.add(shippingFee == null ? BigDecimal.ZERO : shippingFee);
 	}
 	
 	/*

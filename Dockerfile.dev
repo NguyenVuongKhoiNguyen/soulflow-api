@@ -1,0 +1,14 @@
+FROM maven:3.9-eclipse-temurin-17
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y curl xz-utils \
+    && curl -L https://github.com/watchexec/watchexec/releases/download/v2.3.0/watchexec-2.3.0-x86_64-unknown-linux-musl.tar.xz \
+       -o /tmp/watchexec.tar.xz \
+    && tar -xf /tmp/watchexec.tar.xz -C /tmp \
+    && mv /tmp/watchexec-2.3.0-x86_64-unknown-linux-musl/watchexec /usr/local/bin/watchexec \
+    && chmod +x /usr/local/bin/watchexec \
+    && rm -rf /tmp/*
+
+CMD ["sh", "-c", "mvn spring-boot:run & watchexec -w src/main/java -w src/main/resources --exts java,properties,yml,yaml,xml 'mvn -q -DskipTests compile'"]

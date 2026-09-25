@@ -40,4 +40,10 @@ public abstract class BaseService {
     @Autowired
     public PaymentService paymentService;
 
+    @Autowired
+    public QrService qrService;
+
+    @Autowired
+    public StoreService storeService;
+
 }

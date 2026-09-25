@@ -35,17 +35,31 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepo;                    
     private final CartMapper cartMapper;
-    private CacheManager cacheManager;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional
     @CachePut(value = "cartList", key = "#result.id")
     @CacheEvict(value = "cartPages", allEntries = true)
     public CartResponse save(CartRequest request) {
-        // TODO Auto-generated method stub
-        Cart cart = cartMapper.toEntity(request);
-        Cart saved = cartRepo.save(cart);
-        return cartMapper.toResponse(saved);
+        Cart incoming = cartMapper.toEntity(request);
+
+        if (request.getId() == null) {
+            Cart saved = cartRepo.save(incoming);
+            return cartMapper.toResponse(saved);
+        }
+
+        Cart existing = cartRepo.findById(request.getId())
+            .orElseThrow(() -> new EntityNotFoundException("Cart not found with id: " + request.getId()));
+
+        existing.getItems().clear();
+        cartRepo.flush();
+
+        incoming.getItems().forEach(item -> item.setCart(existing));
+        existing.getItems().addAll(incoming.getItems());
+        existing.calTotal();
+
+        return cartMapper.toResponse(existing);
     }
     
     @Override
@@ -70,14 +84,14 @@ public class CartServiceImpl implements CartService {
     }
 
 	@Override
-	@Cacheable(value = "cartPages", key = "{#keyword + '_' + #fromDate + '_' + #toDate + '_' + #expired + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize}")
-	public PageResponse<CartResponse> filterAndPaginateCarts(String keyword, LocalDateTime fromDate, LocalDateTime toDate, Boolean expired, Boolean deleted, SortOrder sortOrder, Integer pageNumber, Integer pageSize) {
+	@Cacheable(value = "cartPages", key = "#accountId + '_' + #keyword + '_' + #fromDate + '_' + #toDate + '_' + #expired + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize")
+	public PageResponse<CartResponse> filterAndPaginateCarts(Long accountId, String keyword, LocalDateTime fromDate, LocalDateTime toDate, Boolean expired, Boolean deleted, SortOrder sortOrder, Integer pageNumber, Integer pageSize) {
 		// TODO Auto-generated method stub
 		Sort sort = sortOrder == SortOrder.ASC
 	            ? Sort.by("id").ascending()
 	            : Sort.by("id").descending();
 		Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-		Page<Cart> page = cartRepo.filterCarts(keyword, fromDate, toDate, expired, deleted, pageable);
+		Page<Cart> page = cartRepo.filterCarts(accountId, keyword, fromDate, toDate, expired, deleted, pageable);
 		List<CartResponse> responses = cartMapper.toResponseList(page.getContent());
 		return new PageResponse<>(page, responses);
 	}
@@ -87,7 +101,9 @@ public class CartServiceImpl implements CartService {
         int effectedRows = cartRepo.checkAndExpireBeforePagination(keyword, fromDate, toDate, expired, deleted);
         if (effectedRows != 0) {
             Cache cache = cacheManager.getCache("cartPages");
-            cache.clear();
+            if (cache != null) cache.clear();
+            Cache detailCache = cacheManager.getCache("cartList");
+            if (detailCache != null) detailCache.clear();
         }
     }
 }

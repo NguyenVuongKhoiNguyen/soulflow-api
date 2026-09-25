@@ -1,21 +1,19 @@
 package com.poly.models.responses;
 
-import lombok.Builder;
 import lombok.Data;
 
 @Data
-@Builder
 public class AuthResponse {
 	
 	private String token;
-	
-	private String id;
-	
-	private String fullname;
-	
-	private String email;
-	
-	private String photo;
+	private boolean rememberMe;
 
-	private String url;
+	private String refreshToken;
+	
+	private long refreshMaxAge;
+	
+	/** Remaining token lifetime in seconds. */
+	private long maxAge;
+	
+	private AccountResponse accountResponse;
 }

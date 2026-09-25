@@ -83,6 +83,7 @@ public class ImageServiceImpl implements ImageService {
     }
 
     //read file from frontend
+    @Override 
     public String getPresignedUrl(String objectName, Integer expiryDays) throws Exception {
         return minioClient.getPresignedObjectUrl(
             GetPresignedObjectUrlArgs.builder()
@@ -96,7 +97,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     public String getPublicUrl(String objectName) throws Exception {
-        return props.url() + "/" + props.bucket() + "/" + "/" + objectName;
+        return props.url().replaceAll("/+$", "") + "/" + props.bucket() + "/" + objectName;
     }
 
     //download file

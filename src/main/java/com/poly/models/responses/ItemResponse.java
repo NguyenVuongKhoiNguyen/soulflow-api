@@ -16,6 +16,8 @@ public class ItemResponse {
     private String subtotal;
     
     private String productId;
+
+    private String imageUrl;
     
     private String cartId;
 }

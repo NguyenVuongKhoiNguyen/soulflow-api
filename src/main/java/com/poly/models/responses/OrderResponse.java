@@ -19,15 +19,27 @@ public class OrderResponse {
     
     private String total;
 
+    private String shippingFee;
+
     private String createdDate;
 
     private String expiredDate;
+
+    private Boolean expired;
     
     private String status;
 
     private String paymentMethod;
+
+    private Boolean paid;
+
+    private String paymentReference;
+
+    private String qrUrl;
     
     private String accountId;
+
+    private String storeId;
     
     private List<OrderDetailResponse> orderDetailResponses;
 }

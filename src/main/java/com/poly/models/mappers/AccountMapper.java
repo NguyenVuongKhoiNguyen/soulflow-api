@@ -98,10 +98,12 @@ public abstract class AccountMapper {
 
 			account.setCreatedDate(oldAccount.getCreatedDate());
 			account.setDeleted(oldAccount.getDeleted());
-			if (request.getPhoto() == null || request.getPhoto().isBlank()) {
+			if (request.getPhoto() == null) {
 				account.setPhoto(oldAccount.getPhoto());
+			} else if (request.getPhoto().isBlank()) {
+				account.setPhoto(null);
 			}
-			account.setDisabled(request.getDisabled() == null ? false : request.getDisabled());
+			account.setDisabled(request.getDisabled() == null ? oldAccount.getDisabled() : request.getDisabled());
 			if (account.getRoles() == null || account.getRoles().isEmpty()) {
 				account.setRoles(oldAccount.getRoles());
 			}
@@ -127,6 +129,10 @@ public abstract class AccountMapper {
 
 	@AfterMapping
 	protected void afterToResponse(@MappingTarget AccountResponse response) {
+		if (response.getPhoto() == null || response.getPhoto().isBlank()) {
+			response.setUrl(null);
+			return;
+		}
 		try {
 			String url = imageService.getPublicUrl(response.getPhoto());
 			response.setUrl(url);

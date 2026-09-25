@@ -24,11 +24,16 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
         WHERE
             (:deleted IS NULL OR co.deleted = :deleted)
             AND (
-                :keyword IS NULL
-                OR LOWER(co.product.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(co.account.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(co.account.fullname) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(co.account.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :productSearch IS NULL
+                OR CAST(co.product.id AS string) = :productSearch
+                OR LOWER(co.product.name) LIKE LOWER(CONCAT('%', :productSearch, '%'))
+            )
+            AND (
+                :commentSearch IS NULL
+                OR CAST(co.account.id AS string) = :commentSearch
+                OR LOWER(co.account.username)   LIKE LOWER(CONCAT('%', :commentSearch, '%'))
+                OR LOWER(co.account.fullname)   LIKE LOWER(CONCAT('%', :commentSearch, '%'))
+                OR LOWER(co.account.email)      LIKE LOWER(CONCAT('%', :commentSearch, '%'))
             )
             AND (:productId IS NULL OR co.product.id = :productId)
             AND (:accountId IS NULL OR co.account.id = :accountId)
@@ -36,7 +41,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             AND (:toDate IS NULL OR co.createdDate <= :toDate)
     """)
     Page<Comment> filterComments(
-            @Param("keyword") String keyword,
+            @Param("productSearch") String productSearch,
+            @Param("commentSearch") String commentSearch,
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,
             @Param("productId") Long productId,

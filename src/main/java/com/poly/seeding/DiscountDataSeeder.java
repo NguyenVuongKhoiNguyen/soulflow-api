@@ -1,4 +1,4 @@
-package com.poly.config;
+package com.poly.seeding;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -53,7 +53,7 @@ public class DiscountDataSeeder implements ApplicationRunner {
         for (int i = 1; i <= 20; i++) {
             Discount discount = new Discount();
             discount.setCode("DISC_" + i + "_" + (10000 + random.nextInt(90000)));
-            discount.setPercentage(BigDecimal.valueOf(5 + random.nextInt(50))); // 5% to 54%
+            discount.setPercentage(BigDecimal.valueOf(random.nextInt(101))); // 0% to 100%
             discount.setDescription("Seeded discount " + i);
             discount.setCreatedDate(LocalDateTime.now());
             discount.setExpiredDate(LocalDateTime.now().plusMonths(1));
@@ -83,4 +83,3 @@ public class DiscountDataSeeder implements ApplicationRunner {
         log.info("Successfully seeded 20 discounts and linked them to {} products total.", linkedProductsCount);
     }
 }
-

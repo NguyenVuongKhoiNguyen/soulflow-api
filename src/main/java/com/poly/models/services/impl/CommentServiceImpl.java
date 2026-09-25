@@ -37,7 +37,10 @@ public class CommentServiceImpl implements CommentService {
 	@Override
 	@Transactional
 	@CachePut(value = "commentList", key = "#result.id")
-    @CacheEvict(value = "commentPages", allEntries = true)
+	@Caching(evict = {
+		@CacheEvict(value = "commentPages", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
+	})
 	public CommentResponse save(CommentRequest request) {
 		Comment comment = commentMapper.toEntity(request);
 		Comment saved = commentRepo.save(comment);
@@ -48,7 +51,8 @@ public class CommentServiceImpl implements CommentService {
 	@Transactional
 	    @Caching(evict = {
     	@CacheEvict(value = "commentList", key = "#commentId"),
-    	@CacheEvict(value = "commentPages", allEntries = true)
+		@CacheEvict(value = "commentPages", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
     })
 	public void softDeleteById(Long commentId) {
 		// TODO Auto-generated method stub
@@ -66,9 +70,10 @@ public class CommentServiceImpl implements CommentService {
 	}
  
 	@Override
-	@Cacheable(value = "commentPages", key = "#keyword + '_' + #fromDate + '_' + #toDate + '_' + #productId + '_' + #accountId + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize")
+	@Cacheable(value = "commentPages", key = "#productSearch + '_' + #commentSearch + '_' + #fromDate + '_' + #toDate + '_' + #productId + '_' + #accountId + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize")
 	public PageResponse<CommentResponse> filterAndPaginateComments(
-		String keyword,
+		String productSearch,
+		String commentSearch,
 		LocalDateTime fromDate,
 		LocalDateTime toDate, 
 		Long productId, 
@@ -83,7 +88,7 @@ public class CommentServiceImpl implements CommentService {
 	            ? Sort.by("id").ascending()
 	            : Sort.by("id").descending();
 		Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-		Page<Comment> page = commentRepo.filterComments(keyword, fromDate, toDate, productId, accountId, deleted, pageable);
+		Page<Comment> page = commentRepo.filterComments(productSearch, commentSearch, fromDate, toDate, productId, accountId, deleted, pageable);
 		List<CommentResponse> responses = commentMapper.toBasicResponseList(page.getContent());
 		return new PageResponse<>(page, responses);
 	}
@@ -92,7 +97,7 @@ public class CommentServiceImpl implements CommentService {
 	public void warmupCache(Integer times) {
 		if (times < 1) return;
 		for (int i = 0; i < times; i++) {
-			filterAndPaginateComments(null, null, null, null, null, null, SortOrder.DESC, 0, 5);	
+			filterAndPaginateComments(null, null, null, null, null, null, null, SortOrder.DESC, 0, 5);	
 		}
 	}
 }

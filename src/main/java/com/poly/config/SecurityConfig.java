@@ -48,11 +48,15 @@ public class SecurityConfig {
 	    http
 	    	.cors(cors -> cors.configurationSource(corsConfigurationSource))
 	        .csrf(csrf -> csrf.disable())
-	        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+	        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+	        .exceptionHandling(errors -> errors
+	            .authenticationEntryPoint((request, response, exception) -> response.setStatus(401))
+	            .accessDeniedHandler((request, response, exception) -> response.setStatus(403)))
 	        .authenticationProvider(authenticationProvider())
 	        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 	        .authorizeHttpRequests(auth -> auth
 	            .requestMatchers("/admin/**").hasAuthority("ADMIN")
+	            .requestMatchers(HttpMethod.POST, "/user/account/update").hasAnyAuthority("USER", "ADMIN")
 	            .requestMatchers("/user/**").hasAuthority("USER")
 	            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 	            .anyRequest().permitAll()
@@ -65,3 +69,4 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
+

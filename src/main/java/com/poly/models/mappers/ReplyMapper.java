@@ -16,6 +16,7 @@ import com.poly.models.entities.Reply;
 import com.poly.models.repositories.ReplyRepository;
 import com.poly.models.requests.ReplyRequest;
 import com.poly.models.responses.ReplyResponse;
+import com.poly.models.services.ImageService;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -26,20 +27,28 @@ public abstract class ReplyMapper {
     @Autowired
     protected ReplyRepository replyRepo;
 
-    @Mapping(target = "createdDate",    ignore = true)
+    @Autowired
+	protected ImageService imageService;
+
     @Mapping(target = "id",             source = "id")
+    @Mapping(target = "createdDate",    ignore = true)
+    @Mapping(target = "deleted",        ignore = true)
     @Mapping(target = "comment",        ignore = true)
     @Mapping(target = "account",        ignore = true)
-    @Mapping(target = "deleted",        ignore = true)
     public abstract Reply toEntity(ReplyRequest request); 
 
-    @Mapping(target = "createdDate", 	source = "createdDate", 			dateFormat = "dd-MM-yyyy HH:mm:ss")
-    @Mapping(target = "id",             source = "id")
-    @Mapping(target = "username",       source = "account.username")
-    @Mapping(target = "fullname",       source = "account.fullname")
-    @Mapping(target = "photo",          source = "account.photo")
-    @Mapping(target = "accountId",      source = "account.id")
-    @Mapping(target = "commentId",      source = "comment.id")
+    @Mapping(target = "id",                     source = "id")
+    @Mapping(target = "createdDate", 	        source = "createdDate", 			dateFormat = "dd-MM-yyyy HH:mm:ss")
+    @Mapping(target = "accountId",              source = "account.id")
+    @Mapping(target = "accountUsername",        source = "account.username")
+    @Mapping(target = "accountFullname",        source = "account.fullname")
+    @Mapping(target = "accountPhoto",           source = "account.photo")
+    @Mapping(target = "accountUrl",             ignore = true)
+    @Mapping(target = "commentProductId",       source = "comment.product.id")
+    @Mapping(target = "commentProductName",     source = "comment.product.name")
+    @Mapping(target = "commentId",              source = "comment.id")
+    @Mapping(target = "commentAccountUsername", source = "comment.account.username")
+    @Mapping(target = "commentAccountFullname", source = "comment.account.fullname")
     public abstract ReplyResponse toResponse(Reply reply);
 
     public abstract List<Reply> toEntityList(List<ReplyRequest> replyRequests);
@@ -67,5 +76,19 @@ public abstract class ReplyMapper {
         reply.setComment(comment);
         reply.setAccount(account);
         reply.setDeleted(false);
+    }
+
+    @AfterMapping
+    protected void afterToResponse(Reply reply, @MappingTarget ReplyResponse response) {
+        String photo = reply.getAccount().getPhoto();
+        if (photo == null || photo.isBlank()) 
+            return;
+        try {
+            String url = imageService.getPublicUrl(photo);
+            response.setAccountUrl(url);
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
     }
 }

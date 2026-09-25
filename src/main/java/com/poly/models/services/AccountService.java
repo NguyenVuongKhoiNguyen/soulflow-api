@@ -12,6 +12,7 @@ import com.poly.models.responses.PageResponse;
 import com.poly.models.services.impl.AccountServiceImpl.GoogleTokenDTO;
 
 public interface AccountService {
+	AuthResponse refresh(String refreshToken);
 	AuthResponse login(AuthRequest authRequest);
 	AuthResponse loginWithGoogle(GoogleTokenDTO googleToken);
 	AccountResponse save(AccountRequest request);
@@ -22,6 +23,12 @@ public interface AccountService {
 	AccountResponse findAccountDetailById(Long accountId);
 	AccountResponse findAccountDetailByUsername(String username);
 	AccountResponse findAccountDetailByEmail(String email);
+	void checkAndExpireBeforePagination(
+		Boolean deleted,
+		String keyword,
+		LocalDateTime fromDate,
+		LocalDateTime toDate,
+		Boolean disabled);
 	PageResponse<AccountResponse> filterAndPaginateAccounts(
 		Boolean deleted, 
 		String keyword, 

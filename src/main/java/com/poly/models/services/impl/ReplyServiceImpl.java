@@ -36,6 +36,11 @@ public class ReplyServiceImpl implements ReplyService {
 
 	@Override
 	@Transactional
+	@Caching(evict = {
+		@CacheEvict(value = "replyPages", allEntries = true),
+		@CacheEvict(value = "commentList", key = "#request.commentId"),
+		@CacheEvict(value = "productDetailList", allEntries = true)
+	})
 	public ReplyResponse save(ReplyRequest request) {
 		Reply reply = replyMapper.toEntity(request);
 		Reply saved = replyRepo.save(reply);
@@ -46,13 +51,16 @@ public class ReplyServiceImpl implements ReplyService {
 	@Transactional
 	@Caching(evict = {
 		@CacheEvict(value = "replyList", key = "#replyId"),
-		@CacheEvict(value = "replyPages", allEntries = true)
+		@CacheEvict(value = "replyPages", allEntries = true),
+		@CacheEvict(value = "commentList", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
 	})
 	public void softDeleteById(Long replyId) {
 		replyRepo.softDelete(replyId);
 	}
 
 	@Override
+	@Cacheable(value = "replyList", key = "#replyId")
 	public ReplyResponse findById(Long replyId) {
 		// TODO Auto-generated method stub
 		if (replyId == null) throw new IllegalArgumentException("Can't not find id when reply is null");
@@ -69,9 +77,11 @@ public class ReplyServiceImpl implements ReplyService {
 	}
 
 	@Override
-	@Cacheable(value = "replyPages", key = "#keyword + '_' + #fromDate + '_' + #toDate + '_' + #accountId + '_' + #commentId + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize")
+	@Cacheable(value = "replyPages", key = "#productSearch + '_' + #commentSearch + '_' + #replySearch + '_' + #fromDate + '_' + #toDate + '_' + #accountId + '_' + #commentId + '_' + #deleted + '_' + #sortOrder + '_' + #pageNumber + '_' + #pageSize")
 	public PageResponse<ReplyResponse> filterAndPaginateReply(
-	        String keyword,
+	        String productSearch,
+		String commentSearch,
+		String replySearch,
 	        LocalDateTime fromDate,
 	        LocalDateTime toDate,
 			Long accountId,
@@ -85,7 +95,7 @@ public class ReplyServiceImpl implements ReplyService {
 	            ? Sort.by("id").ascending()
 	            : Sort.by("id").descending();
 		Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-	    Page<Reply> page = replyRepo.filterReplies(keyword, fromDate, toDate, accountId, commentId, deleted, pageable);
+	    Page<Reply> page = replyRepo.filterReplies(productSearch, commentSearch, replySearch, fromDate, toDate, accountId, commentId, deleted, pageable);
 	    List<ReplyResponse> responses = replyMapper.toResponseList(page.getContent());
 	    return new PageResponse<>(page, responses);
 	}
@@ -94,7 +104,7 @@ public class ReplyServiceImpl implements ReplyService {
 	public void warmupCache(Integer times) {
 		if (times < 1) return;
 		for (int i = 0; i < times; i++) {
-			filterAndPaginateReply(null, null, null, null, null, null, SortOrder.DESC, 0, 5);
+			filterAndPaginateReply(null, null, null, null, null, null, null, null, SortOrder.DESC, 0, 5);
 		}
 	}
 }

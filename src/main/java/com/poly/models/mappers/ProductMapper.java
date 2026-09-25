@@ -67,6 +67,8 @@ public abstract class ProductMapper {
 
 	@AfterMapping
 	protected void afterToEntity(ProductRequest request, @MappingTarget Product product) {
+		product.setAvailable(product.getQuantity() != null && product.getQuantity() > 0
+			&& !Boolean.FALSE.equals(request.getAvailable()));
 		Long id = product.getId();
 		if (id != null) {
 			Product oldProduct = productRepo.findById(id)

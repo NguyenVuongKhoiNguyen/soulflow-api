@@ -1,4 +1,4 @@
-package com.poly.config;
+package com.poly.seeding;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

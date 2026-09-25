@@ -25,18 +25,34 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
         WHERE
             (:deleted IS NULL OR r.deleted = :deleted)
             AND (
-                :keyword IS NULL
-                OR LOWER(r.account.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(r.account.fullname) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(r.account.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :productSearch IS NULL
+                OR CAST(r.comment.product.id AS string) = :productSearch
+                OR LOWER(r.comment.product.name) LIKE LOWER(CONCAT('%', :productSearch, '%'))
             )
+            AND (
+                :commentSearch IS NULL
+                OR CAST(r.comment.id AS string) = :commentSearch
+                OR LOWER(r.comment.account.username) LIKE LOWER(CONCAT('%', :commentSearch, '%'))
+                OR LOWER(r.comment.account.fullname) LIKE LOWER(CONCAT('%', :commentSearch, '%'))
+                OR LOWER(r.comment.account.email)    LIKE LOWER(CONCAT('%', :commentSearch, '%'))
+            )
+            AND (
+                :replySearch IS NULL
+                OR CAST(r.id AS string) = :replySearch
+                OR CAST(r.account.id AS string) = :replySearch
+                OR LOWER(r.account.username) LIKE LOWER(CONCAT('%', :replySearch, '%'))
+                OR LOWER(r.account.fullname) LIKE LOWER(CONCAT('%', :replySearch, '%'))
+                OR LOWER(r.account.email)    LIKE LOWER(CONCAT('%', :replySearch, '%'))
+            )
+            AND (:commentId IS NULL OR r.comment.id = :commentId)
+            AND (:accountId IS NULL OR r.account.id = :accountId)
             AND (:fromDate IS NULL OR r.createdDate >= :fromDate)
             AND (:toDate IS NULL OR r.createdDate <= :toDate)
-            AND (:accountId IS NULL OR r.account.id = :accountId)
-            AND (:commentId IS NULL OR r.comment.id = :commentId)
     """)
     Page<Reply> filterReplies(
-            @Param("keyword") String keyword,
+            @Param("productSearch") String productSearch,
+            @Param("commentSearch") String commentSearch,
+            @Param("replySearch") String replySearch,
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,
             @Param("accountId") Long accountId,

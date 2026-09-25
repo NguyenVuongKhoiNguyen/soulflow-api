@@ -12,11 +12,12 @@ public interface CommentService {
 	void softDeleteById(Long commentId);
 	CommentResponse findById(Long commentId);
 	PageResponse<CommentResponse> filterAndPaginateComments(
-		String keyword, 
+		String productSearch,
+		String commentSearch,
 		LocalDateTime fromDate,
 		LocalDateTime toDate, 
 		Long productId,
-		Long acocuntId,
+		Long accountId,
 		Boolean deleted, 
 		SortOrder sortOrder, 
 		Integer pageNumber, 

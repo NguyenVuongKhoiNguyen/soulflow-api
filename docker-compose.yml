@@ -12,11 +12,11 @@ services:
       - --appendonly
       - "yes"
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_CONTAINER_PORT}"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,25 +26,32 @@ services:
     image: minio/minio
     container_name: minio-image-storage
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
+      - "${MINIO_PORT}:${MINIO_CONTAINER_PORT}"
+      - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_CONTAINER_PORT}"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: "${MINIO_ACCESS_KEY}"
+      MINIO_ROOT_PASSWORD: "${MINIO_SECRET_KEY}"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "${MINIO_PUBLIC_URL}/minio/health/live"
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama-ai
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT}:${OLLAMA_CONTAINER_PORT}"
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
@@ -62,9 +69,9 @@ services:
       ollama:
         condition: service_healthy
     environment:
-      OLLAMA_HOST: "http://ollama:11434"
+      OLLAMA_HOST: "${OLLAMA_BASE_URL}"
     entrypoint: ["/bin/ollama"]
-    command: ["pull", "${OLLAMA_CHAT_MODEL:-qwen2.5:0.5b}"]
+    command: ["pull", "${OLLAMA_CHAT_MODEL}"]
     restart: "no"
 
   sqlserver:
@@ -72,9 +79,9 @@ services:
     container_name: sqlserver-db
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Nguyen@12345"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
     ports:
-      - "1435:1433"
+      - "${DB_PORT}:${DB_CONTAINER_PORT}"
     volumes:
       - sqlserver_data:/var/opt/mssql
       - ./init:/init
@@ -88,7 +95,7 @@ services:
           "-U",
           "sa",
           "-P",
-          "Nguyen@12345",
+          "${DB_PASSWORD}",
           "-C",
           "-Q",
           "SELECT 1"
@@ -106,20 +113,23 @@ services:
       sqlserver:
         condition: service_healthy
     environment:
-      MSSQL_SA_PASSWORD: "Nguyen@12345"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
     entrypoint:
       - /bin/bash
       - -c
       - >-
         /opt/mssql-tools18/bin/sqlcmd
-        -S sqlserver -U sa -P "$${MSSQL_SA_PASSWORD}" -C
+        -S sqlserver
+        -U sa
+        -P "$${MSSQL_SA_PASSWORD}"
+        -C
         -Q "IF DB_ID(N'flower_shop') IS NULL CREATE DATABASE [flower_shop];"
     restart: "no"
 
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: flower-shop-api
     depends_on:
       sqlserver-init:
@@ -131,19 +141,80 @@ services:
       ollama-init:
         condition: service_completed_successfully
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=flower_shop;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=true"
-      SPRING_DATASOURCE_USERNAME: "sa"
-      SPRING_DATASOURCE_PASSWORD: "Nguyen@12345"
-      SPRING_DATA_REDIS_HOST: "redis"
-      MINIO_URL: "http://minio:9000"
-      ACCOUNT_SEEDING_ENABLED: "${ACCOUNT_SEEDING_ENABLED:-true}"
-      ACCOUNT_SEEDING_DEFAULT_PASSWORD: "${ACCOUNT_SEEDING_DEFAULT_PASSWORD:-password}"
-      CATALOG_SEEDING_ENABLED: "${CATALOG_SEEDING_ENABLED:-true}"
-      COMMENT_REPLY_SEEDING_ENABLED: "${COMMENT_REPLY_SEEDING_ENABLED:-true}"
-      OLLAMA_BASE_URL: "http://ollama:11434"
-      OLLAMA_CHAT_MODEL: "${OLLAMA_CHAT_MODEL:-qwen2.5:0.5b}"
+      API_CONTAINER_PORT: "${API_CONTAINER_PORT}"
+
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
+      SPRING_DATASOURCE_USERNAME: "${SPRING_DATASOURCE_USERNAME}"
+      SPRING_DATASOURCE_PASSWORD: "${DB_PASSWORD}"
+
+      DB_PASSWORD: "${DB_PASSWORD}"
+
+      MAIL_USERNAME: "${MAIL_USERNAME}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD}"
+
+      REDIS_HOST: "${REDIS_HOST}"
+      REDIS_CONTAINER_PORT: "${REDIS_CONTAINER_PORT}"
+
+      MINIO_URL: "${MINIO_URL}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL}"
+      OLLAMA_CHAT_MODEL: "${OLLAMA_CHAT_MODEL}"
+
+      FRONTEND_URL: "${FRONTEND_URL}"
+
+      SEPAY_WEBHOOK_API_KEY: "${SEPAY_WEBHOOK_API_KEY}"
+      SEPAY_ACCOUNT_NUMBER: "${SEPAY_ACCOUNT_NUMBER}"
+
+
+      ACCOUNT_SEEDING_ENABLED: "${ACCOUNT_SEEDING_ENABLED}"
+      ACCOUNT_SEEDING_DEFAULT_PASSWORD: "${ACCOUNT_SEEDING_DEFAULT_PASSWORD}"
+      CATALOG_SEEDING_ENABLED: "${CATALOG_SEEDING_ENABLED}"
+      COMMENT_REPLY_SEEDING_ENABLED: "${COMMENT_REPLY_SEEDING_ENABLED}"
+
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+
     ports:
-      - "8080:8080"
+      - "${API_PORT}:${API_CONTAINER_PORT}"
+
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../flowershop
+      dockerfile: Dockerfile.dev
+
+    container_name: flower-shop-frontend
+
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_CONTAINER_PORT}"
+
+    environment:
+      API_URL: "${API_URL}"
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL}"
+
+      NEXT_PUBLIC_MINIO_URL: "${NEXT_PUBLIC_MINIO_URL}"
+      MINIO_INTERNAL_URL: "${MINIO_INTERNAL_URL}"
+
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+
+    volumes:
+      - ../flowershop:/app
+      - /app/node_modules
+      - /app/.next
+
+    depends_on:
+      - api
+
     restart: unless-stopped
 
 volumes:
@@ -151,3 +222,13 @@ volumes:
   minio_data:
   ollama_data:
   sqlserver_data:
+  maven_cache:
+
+
+
+
+
+
+
+
+

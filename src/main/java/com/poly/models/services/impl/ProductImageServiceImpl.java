@@ -36,10 +36,12 @@ public class ProductImageServiceImpl implements ProductImageService {
 
 	@Override
 	@Transactional
-	@CachePut(value = "productImgeList", key = "#result.id")
+	@CachePut(value = "productImageList", key = "#result.id")
 	@Caching(evict = {
 		@CacheEvict(value = "productImagePages", allEntries = true),
-		@CacheEvict(value = "productPages", allEntries = true)
+		@CacheEvict(value = "productPages", allEntries = true),
+		@CacheEvict(value = "productList", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
 	})
 	public ProductImageResponse save(ProductImageRequest request) {
 		// TODO Auto-generated method stub
@@ -61,8 +63,11 @@ public class ProductImageServiceImpl implements ProductImageService {
 	@Override
 	@Transactional
 	@Caching(evict = {
+		@CacheEvict(value = "productImageList", key = "#id"),
 		@CacheEvict(value = "productImagePages", allEntries = true),
-		@CacheEvict(value = "productPages", allEntries = true)
+		@CacheEvict(value = "productPages", allEntries = true),
+		@CacheEvict(value = "productList", allEntries = true),
+		@CacheEvict(value = "productDetailList", allEntries = true)
 	})
 	public void softDeleteById(Long id) {
 		// TODO Auto-generated method stub

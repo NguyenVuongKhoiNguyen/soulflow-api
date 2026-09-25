@@ -57,7 +57,7 @@ public class Cart {
 	@JoinColumn(name = "account_id")
 	private Account account;
 	
-	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL , fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<Item> items = new ArrayList<>();
 	
 	public void calTotal() {

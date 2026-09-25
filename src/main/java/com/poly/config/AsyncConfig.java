@@ -43,4 +43,21 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean(name = "filterTaskExecutor")
+    public Executor filterTaskExecutor(
+            @Value("${app.filter.executor.core-pool-size:2}") int corePoolSize,
+            @Value("${app.filter.executor.max-pool-size:4}") int maxPoolSize,
+            @Value("${app.filter.executor.queue-capacity:50}") int queueCapacity) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix("filter-exec-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
 }

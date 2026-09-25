@@ -40,7 +40,13 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	@Transactional
 	@CachePut(value = "productList", key = "#result.id")
-    @CacheEvict(value = "productPages", allEntries = true) 
+	@Caching(evict = {
+		@CacheEvict(value = "productDetailList", key = "#result.id"),
+		@CacheEvict(value = "productPages", allEntries = true),
+		@CacheEvict(value = "commentPages", allEntries = true),
+		@CacheEvict(value = "commentList", allEntries = true),
+		@CacheEvict(value = "replyPages", allEntries = true)
+	})
 	public ProductResponse save(ProductRequest request) {
 	    Product product = productMapper.toEntity(request);
 	    Product saved = productRepo.save(product);

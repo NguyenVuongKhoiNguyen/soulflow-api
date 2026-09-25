@@ -70,7 +70,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 			AND (:disabled IS NULL OR a.disabled = :disabled)
 			AND a.credentialExpiredDate <= CURRENT_TIMESTAMP
 		""")
-	void checkAndExpireCredentialBeforePagination(
+	int checkAndExpireCredentialBeforePagination(
 			@Param("deleted") Boolean deleted,
 			@Param("keyword") String keyword,
 			@Param("fromDate") LocalDateTime fromDate,

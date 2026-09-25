@@ -25,14 +25,18 @@ public class JwtUtil {
                 .claim("roleCode", primaryRole)
                 .claim("roleCodes", roleCodes)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000)) //2 hours
-                //.setExpiration(new Date(System.currentTimeMillis() + 30 * 1000)) //30 seconds
+                .setExpiration(new Date(System.currentTimeMillis() + 8 * 60 * 60 * 1000)) //8 hours
+                //.setExpiration(new Date(System.currentTimeMillis() + 10 * 1000)) //30 seconds
                 .signWith(KEY)
                 .compact();
     }
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    public Date extractExpiration(String token) {
+        return extractAllClaims(token).getExpiration();
     }
 
     @SuppressWarnings("unchecked")

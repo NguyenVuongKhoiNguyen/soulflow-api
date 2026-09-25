@@ -19,6 +19,8 @@ public interface ImageService {
 
     String getPublicUrl(String objectName) throws Exception;
 
+    String getPresignedUrl(String objectName, Integer expiryDays) throws Exception;
+
     List<String> listObjects() throws Exception;
 
 }

@@ -16,6 +16,9 @@ import com.poly.models.entities.Category;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
+
+    List<Category> findAllByDeletedFalse();
+
 	Optional<Category> findFirstByNameIgnoreCase(String name);
 
 	List<Category> findByDeletedFalseOrderByNameAsc();

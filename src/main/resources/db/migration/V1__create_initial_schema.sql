@@ -64,19 +64,29 @@ CREATE TABLE product_images (
     CONSTRAINT fk_product_images_products FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+CREATE TABLE stores (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(100) NOT NULL,
+    phone VARCHAR(15) NOT NULL,
+    address NVARCHAR(255) NOT NULL
+);
+
 CREATE TABLE orders (
     id BIGINT IDENTITY(1,1) PRIMARY KEY,
     fullname NVARCHAR(100) NOT NULL,
     phone_number VARCHAR(15) NOT NULL,
     address NVARCHAR(255) NOT NULL,
     total DECIMAL(18,2) NOT NULL,
+    shipping_fee DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     created_date DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     expired_date DATETIME2,
     expired BIT NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     del_if BIT NOT NULL DEFAULT 0,
     account_id BIGINT,
+    store_id BIGINT,
     CONSTRAINT ck_orders_total CHECK (total >= 0),
+    CONSTRAINT ck_orders_shipping_fee CHECK (shipping_fee >= 0),
     CONSTRAINT ck_orders_status CHECK (
         status IN (
             'PENDING',
@@ -87,7 +97,8 @@ CREATE TABLE orders (
             'CANCELLED'
         )
     ),
-    CONSTRAINT fk_orders_accounts FOREIGN KEY (account_id) REFERENCES accounts(id)
+    CONSTRAINT fk_orders_accounts FOREIGN KEY (account_id) REFERENCES accounts(id),
+    CONSTRAINT fk_orders_stores FOREIGN KEY (store_id) REFERENCES stores(id)
 );
 
 CREATE TABLE orders_details (
@@ -114,7 +125,7 @@ CREATE TABLE payments (
     order_id BIGINT NOT NULL UNIQUE,
     CONSTRAINT ck_payments_amount CHECK (amount >= 0),
     CONSTRAINT ck_payments_payment_method CHECK (
-        payment_method IN ('COD', 'E_BANKING', 'IN_STORE')
+        payment_method IN ('COD', 'E_BANKING')
     ),
     CONSTRAINT fk_payments_orders FOREIGN KEY (order_id) REFERENCES orders(id)
 );
@@ -202,6 +213,7 @@ CREATE TABLE chat_messages (
 CREATE INDEX ix_products_category_id ON products(category_id);
 CREATE INDEX ix_product_images_product_id ON product_images(product_id);
 CREATE INDEX ix_orders_account_id ON orders(account_id);
+CREATE INDEX ix_orders_store_id ON orders(store_id);
 CREATE INDEX ix_order_details_order_id ON orders_details(order_id);
 CREATE INDEX ix_order_details_product_id ON orders_details(product_id);
 CREATE INDEX ix_carts_account_id ON carts(account_id);

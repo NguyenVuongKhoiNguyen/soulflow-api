@@ -1,6 +1,7 @@
 package com.poly.models.repositories;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.poly.models.entities.Cart;
 
 public interface CartRepository extends JpaRepository<Cart, Long> {
+	List<Cart> findByExpiredDateBetweenOrderByIdAsc(LocalDateTime fromDate, LocalDateTime toDate);
+
 	@Query("""
 		SELECT ca
 		FROM Cart ca
@@ -22,12 +25,14 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
 				OR LOWER(ca.account.fullname) LIKE LOWER(CONCAT('%', :keyword, '%'))
 				OR STR(ca.id) LIKE CONCAT('%', :keyword, '%')
 			)
+			AND (:accountId IS NULL OR ca.account.id = :accountId)
 			AND (:fromDate IS NULL OR ca.createdDate >= :fromDate)
 			AND (:toDate IS NULL OR ca.createdDate <= :toDate)
 			AND (:expired IS NULL OR ca.expired = :expired)
 			AND (:deleted IS NULL OR ca.deleted = :deleted)
     """)
 	Page<Cart> filterCarts(
+            @Param("accountId") Long accountId,
 			@Param("keyword") String keyword,
 			@Param("fromDate") LocalDateTime fromDate,
 			@Param("toDate") LocalDateTime toDate,

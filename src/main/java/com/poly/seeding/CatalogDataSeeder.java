@@ -1,4 +1,4 @@
-package com.poly.config;
+package com.poly.seeding;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,11 +56,8 @@ public class CatalogDataSeeder implements ApplicationRunner {
     private final ProductImageRepository productImageRepository;
     private final ImageService imageService;
 
-    @Value("${app.catalog-seeding.default-price:100000}")
-    private BigDecimal defaultPrice;
-
-    @Value("${app.catalog-seeding.default-quantity:10}")
-    private Integer defaultQuantity;
+    private static final BigDecimal MAX_SEEDED_PRICE = BigDecimal.valueOf(500_000);
+    private static final int DEFAULT_QUANTITY = 10;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -176,12 +173,12 @@ public class CatalogDataSeeder implements ApplicationRunner {
                 Product product = new Product();
                 product.setName(productName);
                 product.setDescription(productName + " from the " + category.getName() + " collection");
-                product.setPrice(defaultPrice);
+                product.setPrice(randomPrice());
                 product.setCreatedDate(LocalDateTime.now());
                 product.setAvailable(true);
-                product.setQuantity(defaultQuantity);
+                product.setQuantity(DEFAULT_QUANTITY);
                 product.setCustomised(false);
-                product.setSales(0L);
+                product.setSales(ThreadLocalRandom.current().nextLong(101));
                 product.setDeleted(false);
                 product.setCategory(category);
                 return new ProductSeedResult(productRepository.save(product), true);
@@ -196,6 +193,12 @@ public class CatalogDataSeeder implements ApplicationRunner {
             case "gif" -> "image/gif";
             default -> "application/octet-stream";
         };
+    }
+
+    private BigDecimal randomPrice() {
+        return BigDecimal.valueOf(
+            ThreadLocalRandom.current().nextLong(MAX_SEEDED_PRICE.longValue() + 1)
+        );
     }
 
     private String extension(String fileName) {

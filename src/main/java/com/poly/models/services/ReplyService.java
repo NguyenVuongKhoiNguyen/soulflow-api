@@ -14,7 +14,9 @@ public interface ReplyService {
 	ReplyResponse findById(Long replyId);
 	List<ReplyResponse> findAll();
 	PageResponse<ReplyResponse> filterAndPaginateReply(
-			String keyword,
+			String productSearch,
+		String commentSearch,
+		String replySearch,
             LocalDateTime fromDate,
             LocalDateTime toDate,
 			Long accountId,
