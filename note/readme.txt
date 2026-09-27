@@ -22,3 +22,6 @@ Set-ExecutionPolicy -Scope Process Bypass; .\download-tableplant.ps1
 Set-ExecutionPolicy -Scope Process Bypass; .\download_orchid.ps1
 
 
+docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.production.yml up -d --build
+
+docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.production.yml down

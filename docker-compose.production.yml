@@ -1,0 +1,59 @@
+# Production override for a laptop-hosted SoulFlow deployment.
+#
+# Usage:
+#   1. Copy .env.production.example to .env.production and set PUBLIC_HOST.
+#   2. docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.production.yml up -d --build
+#
+# PUBLIC_HOST is your laptop's LAN IP or a DNS name, without http:// or a port.
+# Example: PUBLIC_HOST=192.168.1.25
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      API_CONTAINER_PORT: "8080"
+      # Keep localhost available for testing on the laptop while allowing
+      # phones and other devices to use the laptop's network address.
+      FRONTEND_URL: "http://localhost:${FRONTEND_PORT:-3000},http://${PUBLIC_HOST}:${FRONTEND_PORT:-3000}"
+      MINIO_PUBLIC_URL: "http://${PUBLIC_HOST}:${MINIO_PORT:-9000}"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "false"
+    volumes: !reset []
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ../flowershop
+      dockerfile: Dockerfile
+      args:
+        # Next.js resolves rewrites during its production build.  Keep this
+        # address internal to Docker; the browser calls /backend on the same
+        # public origin instead.
+        API_URL: "http://api:8080"
+        NEXT_PUBLIC_MINIO_URL: "http://${PUBLIC_HOST}:${MINIO_PORT:-9000}"
+    environment:
+      API_URL: "http://api:8080"
+      NEXT_PUBLIC_MINIO_URL: "http://${PUBLIC_HOST}:${MINIO_PORT:-9000}"
+    volumes: !reset []
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+  # Do not publish infrastructure services in production.  The API continues
+  # to reach them through Docker's private network.
+  redis:
+    ports: !reset []
+
+  ollama:
+    ports: !reset []
+
+  sqlserver:
+    ports: !reset []
+
+  # Product image URLs are returned directly to browsers, so MinIO remains
+  # reachable on the configured port. Set MINIO_PUBLIC_URL in .env.production
+  # to this same public hostname and port.
+  minio:
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"

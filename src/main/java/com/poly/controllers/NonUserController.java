@@ -97,7 +97,7 @@ public class NonUserController extends BaseService {
         //build cookie
         ResponseCookie authCookie = ResponseCookie.from("account_token", auth.getToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(useSecureCookie(servletRequest))
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(auth.isRememberMe() ? auth.getMaxAge() : -1)
@@ -115,7 +115,7 @@ public class NonUserController extends BaseService {
         AuthResponse auth = accountService.loginWithGoogle(token);
         ResponseCookie authCookie = ResponseCookie.from("account_token", auth.getToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(useSecureCookie(request))
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(auth.isRememberMe() ? auth.getMaxAge() : -1)
@@ -132,7 +132,7 @@ public class NonUserController extends BaseService {
         refreshTokens.revoke(readRefreshToken(request));
         ResponseCookie cookie = ResponseCookie.from("account_token", "")
                 .httpOnly(true)
-                .secure(true)
+                .secure(useSecureCookie(request))
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
@@ -140,7 +140,7 @@ public class NonUserController extends BaseService {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString(),
                     ResponseCookie.from("refresh_token", "").httpOnly(true)
-                        .secure(secureCookie || request.isSecure()).sameSite("Lax")
+                        .secure(useSecureCookie(request)).sameSite("Lax")
                         .path("/").maxAge(0).build().toString())
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .build();
@@ -150,7 +150,7 @@ public class NonUserController extends BaseService {
     ResponseEntity<AccountResponse> refresh(HttpServletRequest request) {
         AuthResponse auth = accountService.refresh(readRefreshToken(request));
         ResponseCookie accessCookie = ResponseCookie.from("account_token", auth.getToken())
-                .httpOnly(true).secure(true)
+                .httpOnly(true).secure(useSecureCookie(request))
                 .sameSite("Lax").path("/").maxAge(auth.isRememberMe() ? auth.getMaxAge() : -1).build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString(), refreshCookie(auth, request).toString())
@@ -160,8 +160,12 @@ public class NonUserController extends BaseService {
 
     private ResponseCookie refreshCookie(AuthResponse auth, HttpServletRequest request) {
         return ResponseCookie.from("refresh_token", auth.getRefreshToken())
-                .httpOnly(true).secure(true)
+                .httpOnly(true).secure(useSecureCookie(request))
                 .sameSite("Lax").path("/").maxAge(auth.isRememberMe() ? auth.getRefreshMaxAge() : -1).build();
+    }
+
+    private boolean useSecureCookie(HttpServletRequest request) {
+        return secureCookie || request.isSecure();
     }
 
     private String readRefreshToken(HttpServletRequest request) {
